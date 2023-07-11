@@ -1,5 +1,6 @@
 import os
 import sys
+import shutil
 
 import boto3
 import dill
@@ -78,29 +79,50 @@ def load_object(file_path):
         raise CustomException(e, sys)
 
 
-def upload_file(from_filename, to_filename, bucket_name):
-    try:
-        s3_resource = boto3.resource("s3")
 
-        s3_resource.meta.client.upload_file(from_filename, bucket_name, to_filename)
+def upload_file(from_filename, to_filename):
+    try:
+        # Get the absolute path of the project folder
+        project_folder = os.path.dirname(os.path.abspath(__file__))
+
+        # Get the absolute path of the destination folder within the project folder
+        destination_folder = os.path.join(project_folder, "artifacts")
+
+        # Create the destination folder if it doesn't exist
+        if not os.path.exists(destination_folder):
+            os.makedirs(destination_folder)
+
+        # Get the absolute path of the destination file within the artifacts folder
+        destination_file_path = os.path.join(destination_folder, to_filename)
+
+        # Copy the file to the destination folder
+        shutil.copy(from_filename, destination_file_path)
+
+    except Exception as e:
+        raise CustomException(e, sys)
+
+      
+"""
+
+def download_model(from_filename, to_filename):
+    try:
+        # Get the absolute path of the project folder
+        project_folder = os.path.dirname(os.path.abspath(__file__))
+
+        # Get the absolute path of the source file within the artifacts folder
+        source_file_path = os.path.join(project_folder, "artifacts", from_filename)
+
+        # Get the absolute path of the destination file
+        destination_file_path = os.path.join(project_folder, to_filename)
+
+        # Copy the file to the destination path
+        shutil.copy(source_file_path, destination_file_path)
 
     except Exception as e:
         raise CustomException(e, sys)
 
 
-def download_model(bucket_name, bucket_file_name, dest_file_name):
-    try:
-        s3_client = boto3.client("s3")
-
-        s3_client.download_file(bucket_name, bucket_file_name, dest_file_name)
-
-        return dest_file_name
-
-    except Exception as e:
-        raise CustomException(e, sys)
-
-
-
+"""
 
 
 def evaluate_models(X, y, models):

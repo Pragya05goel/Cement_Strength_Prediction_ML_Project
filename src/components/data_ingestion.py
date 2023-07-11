@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 
 from src.exception import CustomException
 from src.logger import logging
-from src.utils import export_collection_as_dataframe
+#from src.utils import export_collection_as_dataframe
 
 
 @dataclass
@@ -27,19 +27,15 @@ class DataIngestion:
         logging.info("Entered initiate_data_ingestion method of DataIngestion class")
 
         try:
-            """
-            df: pd.DataFrame = export_collection_as_dataframe(
-                db_name="ineuron", collection_name="cement"
-            )
-            """
+            
             df = pd.read_csv(os.path.join('notebook', 'cement_data.csv'))
-            logging.info("Exported collection as dataframe")
+            logging.info("Dataset read as pandas dataframe")
 
             os.makedirs(
                 os.path.dirname(self.ingestion_config.train_data_path), exist_ok=True
             )
 
-            df.to_csv(self.ingestion_config.raw_data_path, index=False, header=True)
+            #df.to_csv(self.ingestion_config.raw_data_path, index=False, header=True)
 
             train_set, test_set = train_test_split(df, test_size=0.2, random_state=42)
 

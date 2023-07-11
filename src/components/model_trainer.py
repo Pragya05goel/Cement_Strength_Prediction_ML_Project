@@ -154,7 +154,7 @@ class ModelTrainer:
             upload_file(
                 from_filename=self.model_trainer_config.trained_model_file_path,
                 to_filename="model.pkl",
-                bucket_name="cement-strength",
+                ##bucket_name="cement-strength",
             )
 
             return best_model_score

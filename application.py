@@ -1,9 +1,10 @@
-from flask import Flask, render_template, jsonify, request, send_file
+from flask import Flask, render_template, jsonify, request
 from src.exception import CustomException
 from src.logger import logging as lg
 import os,sys
-
+import pandas as pd
 from src.pipeline.train_pipeline import TrainPipeline
+from src.pipeline.predict_pipeline import CustomData
 from src.pipeline.predict_pipeline import PredictionPipeline
 
 app = Flask(__name__)
@@ -25,37 +26,31 @@ def train_route():
     
 
 @app.route("/predict", methods = ['POST', 'GET'])
-def predict():
-    try:
-        if request.method == "POST":
-            data = dict(request.form.items())
-            print(data)
-            return jsonify("done")
-    except Exception as e:
-        raise CustomException(e,sys)
-
-@app.route('/upload', methods=['POST', 'GET'])
-def upload():
-    
-    try:
-
-
-        if request.method == 'POST':
-            prediction_pipeline = PredictionPipeline(request)
-            prediction_file_detail = prediction_pipeline.run_pipeline()
-
-            lg.info("prediction completed. Downloading prediction file.")
-            return send_file(prediction_file_detail.prediction_file_path,
-                            download_name= prediction_file_detail.prediction_file_name,
-                            as_attachment= True)
-
-
+def predict_datapoint():
+        if request.method== "GET":
+             return "Welcome Back"
         else:
-            return render_template('upload_file.html')
-    except Exception as e:
-        raise CustomException(e,sys)
-    
+            data=CustomData(
+            cement=float(request.form.get('cement')),
+            blast_furnace_slag = float(request.form.get('blast_furnace_slag')),
+            fly_ash = float(request.form.get('fly_ash')),
+            water = float(request.form.get('water')),
+            superplasticizer= float(request.form.get('superplasticizer')),
+            coarse_aggregate = float(request.form.get('coarse_aggregate')),
+            fine_aggregate = request.form.get('fine_aggregate'),
+            age= request.form.get('age'))
+            
+            final_new_data=data.get_data_as_dataframe()
+            predict_pipeline=PredictionPipeline()
+            pred=predict_pipeline.predict(final_new_data)
 
+            results=round(pred[0],2)
+
+            return render_template('index.html',final_result=results)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080, debug= True)
+    app.run(host="0.0.0.0",debug= True)  
+
+
+    
+

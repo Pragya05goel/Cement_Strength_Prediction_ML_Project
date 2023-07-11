@@ -5,122 +5,72 @@ from src.logger import logging
 
 from src.exception import CustomException
 import sys
-from flask import request
-from src.utils import download_model, load_object
+import os
+from src.exception import CustomException
+from src.logger import logging
+from src.utils import load_object
+import pandas as pd
 
-from dataclasses import dataclass
         
-        
-@dataclass
-class PredictionFileDetail:
-    prediction_output_dirname: str = "predictions"
-    prediction_file_name:str =  "predicted_file.csv"
-    prediction_file_path:str = os.path.join(prediction_output_dirname,prediction_file_name)
-
-
-
 class PredictionPipeline:
-    def __init__(self, request: request):
-
-        self.request = request
-        self.prediction_file_detail = PredictionFileDetail()
+    def __init__(self):
+          pass
 
 
-
-    def save_input_files(self)-> str:
-
-        """
-            Method Name :   save_input_files
-            Description :   This method saves the input file to the prediction artifacts directory. 
-            
-            Output      :   input dataframe
-            On Failure  :   Write an exception log and then raise an exception
-            
-            Version     :   1.2
-            Revisions   :   moved setup to cloud
-        """
-
-        try:
-            pred_file_input_dir = "prediction_artifacts"
-            os.makedirs(pred_file_input_dir, exist_ok=True)
-
-            input_csv_file = self.request.files['file']
-            pred_file_path = os.path.join(pred_file_input_dir, input_csv_file.filename)
-            
-            
-            input_csv_file.save(pred_file_path)
-
-
-            return pred_file_path
-        except Exception as e:
-            raise CustomException(e,sys)
 
     def predict(self, features):
-            try:
-                model_path = download_model(
-                    bucket_name="ineuron-test-bucket-123",
-                    bucket_file_name="model.pkl",
-                    dest_file_name="model.pkl",
-                )
-
-                model = load_object(file_path=model_path)
-
-                preds = model.predict(features)
-
-                return preds
-
-            except Exception as e:
-                raise CustomException(e, sys)
-        
-    def get_predicted_dataframe(self, input_dataframe_path:pd.DataFrame):
-
-        """
-            Method Name :   get_predicted_dataframe
-            Description :   this method returns the dataframw with a new column containing predictions
-
-            
-            Output      :   predicted dataframe
-            On Failure  :   Write an exception log and then raise an exception
-            
-            Version     :   1.2
-            Revisions   :   moved setup to cloud
-        """
-   
         try:
+            #preprocessor_path = os.path.join('artifacts', 'preprocessor.pkl')
+            model_path = os.path.join('artifacts', 'model.pkl')
 
-            prediction_column_name : str = "class"
-            input_dataframe: pd.DataFrame = pd.read_csv(input_dataframe_path)
-            predictions = self.predict(input_dataframe)
-            input_dataframe[prediction_column_name] = [pred for pred in predictions]
-            target_column_mapping = {0:'neg', 1:'pos'}
+            #preprocessor = load_object(preprocessor_path)
+            model = load_object(model_path)
 
-            input_dataframe[prediction_column_name] = input_dataframe[prediction_column_name].map(target_column_mapping)
-            
-            os.makedirs( self.prediction_file_detail.prediction_output_dirname, exist_ok= True)
-            input_dataframe.to_csv(self.prediction_file_detail.prediction_file_path, index= False)
-            logging.info("predictions completed. ")
+            ##data_scaled = preprocessor.transform(features)
 
-
+            pred = model.predict(features)
+            return pred
 
         except Exception as e:
-            raise CustomException(e, sys) from e
-        
+            logging.info("Exception occured in prediction")
+            raise CustomException(e, sys)
 
-        
-    def run_pipeline(self):
+
+class CustomData:
+    def __init__(self,
+                 cement: float,
+                 blast_furnace_slag: float,
+                 fly_ash: float,
+                 water: float,
+                 superplasticizer: float,
+                 coarse_aggregate: float,
+                 fine_aggregate: float,
+                 age: float):
+
+        self.cement = cement
+        self.blast_furnace_slag = blast_furnace_slag
+        self.fly_ash = fly_ash
+        self.water = water
+        self.superplasticizer= superplasticizer
+        self.coarse_aggregate = coarse_aggregate
+        self.fine_aggregate = fine_aggregate
+        self.age = age
+
+    def get_data_as_dataframe(self):
         try:
-            input_csv_path = self.save_input_files()
-            self.get_predicted_dataframe(input_csv_path)
-
-            return self.prediction_file_detail
-
-
+            custom_data_input_dict = {
+                'Cement (component 1)(kg in a m^3 mixture)': [self.cement],
+                'Blast Furnace Slag (component 2)(kg in a m^3 mixture)': [self.blast_furnace_slag],
+                'Fly Ash (component 3)(kg in a m^3 mixture)': [self.fly_ash],
+                'Water  (component 4)(kg in a m^3 mixture)': [self.water],
+                'Superplasticizer (component 5)(kg in a m^3 mixture)': [self.superplasticizer],
+                'Coarse Aggregate  (component 6)(kg in a m^3 mixture)': [self.coarse_aggregate],
+                'Fine Aggregate (component 7)(kg in a m^3 mixture)': [self.fine_aggregate],
+                'Age (day)': [self.age]
+            }
+            df = pd.DataFrame(custom_data_input_dict)
+            logging.info('Dataframe Gathered')
+            return df
         except Exception as e:
-            raise CustomException(e,sys)
-            
-        
-
- 
-        
-
-        
+            logging.info('Exception Occured in prediction pipeline')
+            raise CustomException(e, sys)
